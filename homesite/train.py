@@ -12,6 +12,8 @@ def get_features(train, test):
 def get_train_data():
     train = pandas.read_csv(dir_prefix + 'processed_features.csv')
     test = pandas.read_csv(dir_prefix + 'processed_featurestest.csv')
+    train = train.fillna(-1)
+    test = test.fillna(-1)
     train_y = train['QuoteConversion_Flag']
     train_y.fillna(0)
     features = get_features(train, test)
@@ -57,11 +59,18 @@ def train():
     train_y = train_y[msk]
     dtrain = xgboost.DMatrix(train_X, label=train_y)
     dvalidation = xgboost.DMatrix(validation_X, label=validation_y)
-    bst = xgboost.train({
-        'bst:max_depth': 20,
-        'bst:eta': 1,
-        'objective': 'binary:logistic',
-    }, dtrain, 20,[(dvalidation, 'eval'), (dtrain, 'train')])
+    bst = xgboost.train(
+        {
+            'max_depth': 5,
+            'min_child_weight': 1,
+            'num_class':2,
+            'eval_metric':'auc',
+            'colsample_bytree': 0.95,
+            'subsample': 0.95,
+            'eta': 0.06,
+            'objective': 'multi:softprob',
+        }, dtrain, 5000,[(dvalidation, 'eval'), (dtrain, 'train')]
+    )
 
     bst.save_model('homesite/0001.model')
 
